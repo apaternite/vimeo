@@ -1,0 +1,5 @@
+RewriteEngine On
+# Installation directory
+RewriteBase /
+# Rewrite all other URLs to index.php/URL
+#RewriteRule .* index.php?kohana_uri=$0 [PT,L,QSA]
