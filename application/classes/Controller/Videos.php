@@ -9,22 +9,22 @@ class Controller_Videos extends Controller {
 		$tag = $this->request->query('tag');
 		$embed = $this->request->query('embed');
 		
-		if ($this->request->query('sort') === 'recent') {
-			$sort = 'recent';
+		if ($this->request->query('sort') === 'recent' or $this->request->query('sort') === 'best') {
+			$sort = $this->request->query('sort');
 		} else {
 			$sort = 'popular';
 		}
 		
-		if ($this->request->query('per_page') === NULL or $this->request->query('per_page') > 50) {
+		if (ctype_digit($this->request->query('per_page')) === false or $this->request->query('per_page') > 50) {
 			$perPage = 50;
 		} else {
 			$perPage = $this->request->query('per_page');
 		}
 		
-		if ($this->request->query('page') === NULL) {
+		if (ctype_digit($this->request->query('page')) === false or $this->request->query('page') == 0) {
 			$page = 0;
 		} else {
-			$page = $this->request->query('page');
+			$page = $this->request->query('page') - 1;
 		}
 		
 		$videos = ORM::factory('Video');
