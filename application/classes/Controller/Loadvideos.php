@@ -4,7 +4,8 @@ class Controller_Loadvideos extends Controller {
 		
 	public function action_index()
 	{	
-		require($_SERVER['DOCUMENT_ROOT'] . "/vimeo/application/vendor/vimeo/autoload.php");
+		
+		require($_SERVER['DOCUMENT_ROOT'] . "/application/vendor/vimeo/autoload.php");
 		
 		$client_id = '';
 		$client_secret = '';
@@ -17,44 +18,49 @@ class Controller_Loadvideos extends Controller {
 		
 		foreach ($categories['body']['data'] as $category) {
 			
-			// $categoryArray = array('Animation', 'Arts & Design', 'Cameras & Techniques', 'Comedy', 'Documentary', 'Experimental', 'Fashion', 'Food', 'Instructionals', 'Music', 'Narrative', 'Personal', 'Reporting & Journalism', 'Sports', 'Talks');
+			// $categoryArray = array('Animation', 'Arts & Design', 'Cameras & Techniques', 'Comedy', 'Documentary', 'Experimental', 'Fashion', 'Food', 'Instructionals', 'Music', 'Narrative', 'Personal', 'Reporting & Journalism', 'Sports', 'Talks'));
 			// if (in_array($category['name'], $categoryArray)) {
 			// 	continue;
 			// }
-		
+					
 			$categoryShortName = str_replace('/categories/', '', $category['uri']);
 			
 			for ($i = 1; $i <= 20; $i++) {
 
 				sleep(1);
 				
-				// echo 'page ' . $i . ' of ' . $category['uri'];
+				echo 'page ' . $i . ' of ' . $category['uri'];
 				$videos = $vimeo->request($category['uri'] . '/videos', array('sort' => 'plays', 'per_page' => 50, 'page' => $i));
 				
 				// echo '<pre>'; print_r($videos); echo '</pre>'; exit;
 							
 				foreach ($videos['body']['data'] as $video) {
+					
+					// Prepares video data array
+					$videoSpecs['uri'] = $video['uri'];
+					$videoSpecs['name'] = $video['name'];
+					$videoSpecs['description'] = $video['description'];
+					$videoSpecs['link'] = $video['link'];
+					$videoSpecs['duration'] = $video['duration'];
+					$videoSpecs['width'] = $video['width'];
+					$videoSpecs['height'] = $video['height'];
+					$videoSpecs['create_time'] = $video['created_time'];
+					$videoSpecs['plays'] = $video['stats']['plays'];
+					$videoSpecs['likes'] = $video['metadata']['connections']['likes']['total'];
+					$videoSpecs['comments'] = $video['metadata']['connections']['comments']['total'];
+					
+					if ($video['privacy']['embed'] === 'public') {
+						$videoSpecs['embeddable'] = true;
+					} else {
+						$videoSpecs['embeddable'] = false;
+					}
 								
-					// Populate videos table with video data if video is not already in the database
+					// Look for existing record
 					$videoOrm = ORM::factory('Video')->where('uri', '=', $video['uri'])->find_all()->as_array();
 					
 					if (sizeOf($videoOrm) === 0) {
-						$videoSpecs['uri'] = $video['uri'];
-						$videoSpecs['name'] = $video['name'];
-						$videoSpecs['description'] = $video['description'];
-						$videoSpecs['link'] = $video['link'];
-						$videoSpecs['duration'] = $video['duration'];
-						$videoSpecs['width'] = $video['width'];
-						$videoSpecs['height'] = $video['height'];
-						$videoSpecs['create_time'] = $video['created_time'];
-						$videoSpecs['plays'] = $video['stats']['plays'];
-				
-						if ($video['privacy']['embed'] === 'public') {
-							$videoSpecs['embeddable'] = true;
-						} else {
-							$videoSpecs['embeddable'] = false;
-						}
-								
+						
+						// Add record to DB if it doesn't exist		
 						$videoRecord = new Model_Video();
 						$videoRecord->values($videoSpecs);
 						$videoRecord->save();
@@ -71,6 +77,9 @@ class Controller_Loadvideos extends Controller {
 						}
 					
 					} else {
+						// Update record if it exists
+						$videoOrm[0]->values($videoSpecs);
+						$videoOrm[0]->save();
 						$videoId = $videoOrm[0]->id;
 					}
 					
@@ -81,11 +90,11 @@ class Controller_Loadvideos extends Controller {
 						$categoryRecord->values(array('video_id' => $videoId, 'name' => $category['name'], 'short_name' => $categoryShortName));
 						$categoryRecord->save();
 					}
-					
+										
 				}
 				
 			}
-			
+						
 		}
 
 	}
